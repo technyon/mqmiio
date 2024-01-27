@@ -70,7 +70,12 @@ class MiioMqtt:
 
             topic = self.topic + "/" + setting.replace(":", "/").replace(".", "_")
 
-            self._publish(topic, str(valueObj["value"]))
+            value = valueObj["value"]
+
+            if isinstance(value, bool):
+                self._publish(topic, "true" if value else "false")
+            else:
+                self._publish(topic, str(value))
 
     def _on_message(client, userdata, msg, data):
         self = userdata.miiomqtt
