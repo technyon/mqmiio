@@ -39,7 +39,7 @@ if __name__ == '__main__':
     while True:
         current_time = time.time()
 
-        if current_time - lastPubTime > 10 or mqtt.publish_requested():
+        if current_time - lastPubTime > 3 or mqtt.publish_requested():
             devStatus = dev.status()
 
             for attr in devStatus.data:
