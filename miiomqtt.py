@@ -14,7 +14,6 @@ class MiioMqtt:
         self._subscribe()
         self.client.loop_start()
 
-
     def on_message(client, userdata, msg, data):
         # print(f"`{payload.topic}` from `{payload.payload}` topic")
         self = userdata.miiomqtt
@@ -37,7 +36,12 @@ class MiioMqtt:
             if value != current_value:
                 print(f'bool value {settingName} change from {current_value} to {value}')
                 setting.setter(value)
-        # elif "bool" in str(setting.type):
+        elif "int" in str(setting.type):
+            value = int(payload)
+
+            if value != current_value:
+                print(f'int value {settingName} change from {current_value} to {value}')
+                setting.setter(value)
 
         # setting.setter(payload)
 
