@@ -7,13 +7,23 @@ class MiioMqtt:
         self.port = port
         self.client_id = f'miio-{random.randint(0, 10000)}'
         self.client = self.connect()
+        self.client.loop_start()
+        # self.client.subscribe(topic)
+        # self.client.on_message = self.on_message
+
+    # def on_message(client, userdata, msg):
+    #     print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+
+    def close(self):
+        self.client.loop_stop()
+        self.client.disconnect()
 
     def connect(self):
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
-                print("Connected to MQTT Broker!")
+                print("Connected to MQTT Broker.")
             else:
-                print("Failed to connect, return code %d\n", rc)
+                print("Failed to connect to MQTT Broker, return code %d\n", rc)
 
         # Set Connecting Client ID
         client = mqtt_client.Client(self.client_id)

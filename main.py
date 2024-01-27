@@ -1,9 +1,17 @@
 from miio import DeviceFactory
 from configparser import ConfigParser
-import miiomqtt
 import time
+import miiomqtt
+import signal
+
+def handler(signum, frame):
+    print("Shutting down")
+    mqtt.close()
+    exit(0)
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, handler)
+
     config = ConfigParser()
     config.read('/etc/mqmiio.cfg')
 
@@ -16,7 +24,7 @@ if __name__ == '__main__':
         devStatus = dev.status()
 
         for attr in devStatus.data:
-            print(attr + str(getattr(devStatus, attr)))
+            print(attr + ": " + str(getattr(devStatus, attr)))
 
         mqtt = miiomqtt.MiioMqtt(config.get('mqtt', 'host'), int(config.get('mqtt', 'port')))
         mqtt.publish_status(devStatus)
@@ -28,8 +36,10 @@ if __name__ == '__main__':
     # settings = dev.settings()
     #
     # on = settings["air-purifier:on"]
-    # on.setter(True)
+    # on.setter(False)
 
-    # print(settings)
+    # print(on)
+    #
+    # print(dev.actions)
 
 
