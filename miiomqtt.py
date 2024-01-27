@@ -8,48 +8,23 @@ class MiioMqtt:
         self.port = port
         self.topic = topic
         self.client_id = f'miio-{random.randint(0, 10000)}'
-        self.client = self.connect()
+        self.client = self._connect()
         self.client.miiomqtt = self
+        self.publish_req = False
         self.mapping_topic_setting = {}
         self._subscribe()
         self.client.loop_start()
-
-    def on_message(client, userdata, msg, data):
-        # print(f"`{payload.topic}` from `{payload.payload}` topic")
-        self = userdata.miiomqtt
-        settings = self.device.settings()
-        settingName = self.mapping_topic_setting[data.topic]
-        setting = settings[settingName]
-        payload = data.payload
-        # print(setting.type)
-
-        siid = setting.setter.args[0]
-        piid = setting.setter.args[1]
-        valueObj = self.device.get_property_by(siid, piid)[0]
-        current_value = valueObj["value"]
-
-        if "bool" in str(setting.type):
-            value = False
-            if payload.lower() == b'true':
-                value = True
-
-            if value != current_value:
-                print(f'bool value {settingName} change from {current_value} to {value}')
-                setting.setter(value)
-        elif "int" in str(setting.type):
-            value = int(payload)
-
-            if value != current_value:
-                print(f'int value {settingName} change from {current_value} to {value}')
-                setting.setter(value)
-
-        # setting.setter(payload)
 
     def close(self):
         self.client.loop_stop()
         self.client.disconnect()
 
-    def connect(self):
+    def publish_requested(self):
+        val = self.publish_req
+        self.publish_req = False
+        return val
+
+    def _connect(self):
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
                 print("Connected to MQTT Broker.")
@@ -58,7 +33,6 @@ class MiioMqtt:
 
         # Set Connecting Client ID
         client = mqtt_client.Client(self.client_id)
-        # client.username_pw_set(username, password)
         client.on_connect = on_connect
         client.connect(self.host, self.port)
         return client
@@ -75,12 +49,7 @@ class MiioMqtt:
             self.client.subscribe(topic)
             self.mapping_topic_setting[topic] = setting
 
-        self.client.on_message = self.on_message
-
-    def _publish(self, topic, message):
-        result = self.client.publish(topic, message)
-        status = result[0]
-        return status
+        self.client.on_message = self._on_message
 
     def publish_status(self):
         devStatus = self.device.status()
@@ -103,4 +72,36 @@ class MiioMqtt:
 
             self._publish(topic, str(valueObj["value"]))
 
-            # print(setting + ": " + str(valueObj["value"]))
+    def _on_message(client, userdata, msg, data):
+        self = userdata.miiomqtt
+        settings = self.device.settings()
+        settingName = self.mapping_topic_setting[data.topic]
+        setting = settings[settingName]
+        payload = data.payload
+
+        siid = setting.setter.args[0]
+        piid = setting.setter.args[1]
+        valueObj = self.device.get_property_by(siid, piid)[0]
+        current_value = valueObj["value"]
+
+        if "bool" in str(setting.type):
+            value = False
+            if payload.lower() == b'true':
+                value = True
+
+            if value != current_value:
+                print(f'bool value {settingName} change from {current_value} to {value}')
+                setting.setter(value)
+                self.publish_req = True
+        elif "int" in str(setting.type):
+            value = int(payload)
+
+            if value != current_value:
+                print(f'int value {settingName} change from {current_value} to {value}')
+                setting.setter(value)
+                self.publish_req = True
+
+    def _publish(self, topic, message):
+        result = self.client.publish(topic, message)
+        status = result[0]
+        return status

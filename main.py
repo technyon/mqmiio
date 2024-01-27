@@ -34,18 +34,25 @@ if __name__ == '__main__':
     # devInfo = dev.get_property_by(2, 1)
     # devProp = dev.get_properties(["air_purifier_on"])
 
+    lastPubTime = 0
+
     while True:
-        devStatus = dev.status()
+        current_time = time.time()
 
-        for attr in devStatus.data:
-            print(attr + ": " + str(getattr(devStatus, attr)))
+        if current_time - lastPubTime > 10 or mqtt.publish_requested():
+            devStatus = dev.status()
 
-        mqtt.publish_status()
-        mqtt.publish_setting()
+            for attr in devStatus.data:
+                print(attr + ": " + str(getattr(devStatus, attr)))
+            print("--")
 
-        time.sleep(10)
+            mqtt.publish_status()
+            mqtt.publish_setting()
 
-        print("--")
+            lastPubTime = time.time()
+
+        time.sleep(0.5)
+
 
 
 
