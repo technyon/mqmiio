@@ -14,6 +14,14 @@ if __name__ == '__main__':
 
     config = ConfigParser()
     config.read('/etc/mqmiio.cfg')
+    
+    mqtt_host = config.get('mqtt', 'host')
+    mqtt_port = int(config.get('mqtt', 'port'))
+    mqtt_topic = config.get('mqtt', 'topic')
+
+    mqtt = miiomqtt.MiioMqtt(mqtt_host, mqtt_port, mqtt_topic)
+
+
 
     host = config.get('miio', 'host')
     token = config.get('miio', 'token')
@@ -26,11 +34,6 @@ if __name__ == '__main__':
         for attr in devStatus.data:
             print(attr + ": " + str(getattr(devStatus, attr)))
 
-        mqtt_host = config.get('mqtt', 'host')
-        mqtt_port = int(config.get('mqtt', 'port'))
-        mqtt_topic = config.get('mqtt', 'topic')
-
-        mqtt = miiomqtt.MiioMqtt(mqtt_host, mqtt_port, mqtt_topic)
         mqtt.publish_status(devStatus)
 
         time.sleep(10)
