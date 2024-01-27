@@ -2,7 +2,8 @@ from paho.mqtt import client as mqtt_client
 import random
 
 class MiioMqtt:
-    def __init__(self, host, port, topic):
+    def __init__(self, device, host, port, topic):
+        self.device = device
         self.host = host
         self.port = port
         self.topic = topic
@@ -38,9 +39,25 @@ class MiioMqtt:
         status = result[0]
         return status
 
-    def publish_status(self, devStatus):
+    def publish_status(self):
+        devStatus = self.device.status()
         for attr in devStatus.data:
             value = str(getattr(devStatus, attr))
             topic = self.topic + "/" + attr.replace(":", "/").replace(".", "_")
 
             self._publish(topic, value)
+
+    def publish_setting(self):
+        settings = self.device.settings()
+
+        for setting in settings:
+            setter = settings[setting].setter
+            siid = setter.args[0]
+            piid = setter.args[1]
+            valueObj = self.device.get_property_by(siid, piid)[0]
+
+            topic = self.topic + "/" + setting.replace(":", "/").replace(".", "_")
+
+            self._publish(topic, str(valueObj["value"]))
+
+            # print(setting + ": " + str(valueObj["value"]))
