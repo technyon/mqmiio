@@ -2,9 +2,10 @@ from paho.mqtt import client as mqtt_client
 import random
 
 class MiioMqtt:
-    def __init__(self, host, port):
+    def __init__(self, host, port, topic):
         self.host = host
         self.port = port
+        self.topic = topic
         self.client_id = f'miio-{random.randint(0, 10000)}'
         self.client = self.connect()
         self.client.loop_start()
@@ -40,6 +41,6 @@ class MiioMqtt:
     def publish_status(self, devStatus):
         for attr in devStatus.data:
             value = str(getattr(devStatus, attr))
-            topic = "miio/" + attr.replace(":", "/").replace(".", "_")
+            topic = self.topic + "/" + attr.replace(":", "/").replace(".", "_")
 
             self._publish(topic, value)
