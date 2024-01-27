@@ -1,6 +1,7 @@
 from miio import DeviceFactory
 from configparser import ConfigParser
 import miiomqtt
+import time
 
 if __name__ == '__main__':
     config = ConfigParser()
@@ -10,18 +11,19 @@ if __name__ == '__main__':
     token = config.get('miio', 'token')
 
     dev = DeviceFactory.create(host, token, None, force_generic_miot=True)
-    devStatus = dev.status()
 
-    print("Temperature: " + str(getattr(devStatus, "environment:temperature")))
-    print("Humidity: " + str(getattr(devStatus, "environment:relative-humidity")))
-    print("Air quality: " + str(getattr(devStatus, "environment:air_quality")))
-    print("PM2.5: " + str(getattr(devStatus, "environment:pm2.5_density")))
-    print("Filter time left: " + str(getattr(devStatus, "filter:filter_left_time")))
-    print("Filter life level: " + str(getattr(devStatus, "filter:filter_life_level")))
-    print("Filter used time: " + str(getattr(devStatus, "filter:filter_used_time")))
+    while True:
+        devStatus = dev.status()
 
-    mqtt = miiomqtt.MiioMqtt(config.get('mqtt', 'host'), int(config.get('mqtt', 'port')))
-    mqtt.publish_status(devStatus)
+        for attr in devStatus.data:
+            print(attr + str(getattr(devStatus, attr)))
+
+        mqtt = miiomqtt.MiioMqtt(config.get('mqtt', 'host'), int(config.get('mqtt', 'port')))
+        mqtt.publish_status(devStatus)
+
+        time.sleep(10)
+
+        print("--")
 
     # settings = dev.settings()
     #

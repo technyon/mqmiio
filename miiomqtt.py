@@ -28,18 +28,8 @@ class MiioMqtt:
         return status
 
     def publish_status(self, devStatus):
-        self._publish("miio/environment/temperature", getattr(devStatus, "environment:temperature"))
-        self._publish("miio/environment/humidity", getattr(devStatus, "environment:relative-humidity"))
-        self._publish("miio/environment/air_quality", getattr(devStatus, "environment:air_quality"))
-        self._publish("miio/environment/pm_2_5", getattr(devStatus, "environment:pm2.5_density"))
-        self._publish("miio/filter/timeleft", getattr(devStatus, "filter:filter_left_time"))
-        self._publish("miio/filter/level", getattr(devStatus, "filter:filter_life_level"))
-        self._publish("miio/filter/used_time", getattr(devStatus, "filter:filter_used_time"))
+        for attr in devStatus.data:
+            value = str(getattr(devStatus, attr))
+            topic = "miio/" + attr.replace(":", "/").replace(".", "_")
 
-         # print("Temperature: " + str(getattr(devStatus, "environment:temperature")))
-         # print("Humidity: " + str(getattr(devStatus, "environment:relative-humidity")))
-         # print("Air quality: " + str(getattr(devStatus, "environment:air_quality")))
-         # print("PM2.5: " + str(getattr(devStatus, "environment:pm2.5_density")))
-         # print("Filter time left: " + str(getattr(devStatus, "filter:filter_left_time")))
-         # print("Filter life level: " + str(getattr(devStatus, "filter:filter_life_level")))
-         # print("Filter used time: " + str(getattr(devStatus, "filter:filter_used_time")))
+            self._publish(topic, value)
