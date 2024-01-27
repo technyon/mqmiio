@@ -9,12 +9,37 @@ class MiioMqtt:
         self.topic = topic
         self.client_id = f'miio-{random.randint(0, 10000)}'
         self.client = self.connect()
+        self.client.miiomqtt = self
+        self.mapping_topic_setting = {}
+        self._subscribe()
         self.client.loop_start()
-        # self.client.subscribe(topic)
-        # self.client.on_message = self.on_message
 
-    # def on_message(client, userdata, msg):
-    #     print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+
+    def on_message(client, userdata, msg, data):
+        # print(f"`{payload.topic}` from `{payload.payload}` topic")
+        self = userdata.miiomqtt
+        settings = self.device.settings()
+        settingName = self.mapping_topic_setting[data.topic]
+        setting = settings[settingName]
+        payload = data.payload
+        # print(setting.type)
+
+        siid = setting.setter.args[0]
+        piid = setting.setter.args[1]
+        valueObj = self.device.get_property_by(siid, piid)[0]
+        current_value = valueObj["value"]
+
+        if "bool" in str(setting.type):
+            value = False
+            if payload.lower() == b'true':
+                value = True
+
+            if value != current_value:
+                print(f'bool value {settingName} change from {current_value} to {value}')
+                setting.setter(value)
+        # elif "bool" in str(setting.type):
+
+        # setting.setter(payload)
 
     def close(self):
         self.client.loop_stop()
@@ -33,6 +58,20 @@ class MiioMqtt:
         client.on_connect = on_connect
         client.connect(self.host, self.port)
         return client
+
+    def _subscribe(self):
+        settings = self.device.settings()
+
+        for setting in settings:
+            setter = settings[setting].setter
+            siid = setter.args[0]
+            piid = setter.args[1]
+
+            topic = self.topic + "/" + setting.replace(":", "/").replace(".", "_")
+            self.client.subscribe(topic)
+            self.mapping_topic_setting[topic] = setting
+
+        self.client.on_message = self.on_message
 
     def _publish(self, topic, message):
         result = self.client.publish(topic, message)
