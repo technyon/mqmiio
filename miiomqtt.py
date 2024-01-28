@@ -37,7 +37,17 @@ class MiioMqtt:
         client = mqtt_client.Client(self.client_id)
         client.on_connect = on_connect
         client.on_disconnect = self._on_disconnect
-        client.connect(self.host, self.port)
+
+        success = False
+
+        while not success:
+            try:
+                client.connect(self.host, self.port)
+                success = True
+            except ConnectionError as err:
+                print(f"Failed to connect to broker {err}. Retry in 10 seconds.")
+                time.sleep(10)
+
         return client
 
     def _subscribe(self):
