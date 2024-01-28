@@ -4,6 +4,7 @@ import time
 
 class MiioMqtt:
     def __init__(self, device, host, port, topic):
+        self.closed = False
         self.device = device
         self.host = host
         self.port = port
@@ -17,6 +18,7 @@ class MiioMqtt:
         self.client.loop_start()
 
     def close(self):
+        self.closed = True
         self.client.loop_stop()
         self.client.disconnect()
 
@@ -41,6 +43,9 @@ class MiioMqtt:
         success = False
 
         while not success:
+            if self.closed:
+                return None
+
             try:
                 client.connect(self.host, self.port)
                 success = True
@@ -65,11 +70,17 @@ class MiioMqtt:
         self.client.on_message = self._on_message
 
     def _on_disconnect(self, userdata, rc, data):
+        if self.closed:
+            return
+
         reconnect_delay = 10
         client = self.client
 
         print("Disconnected with result code: %s", rc)
         while True:
+            if self.closed:
+                return
+
             print("Reconnecting in %d seconds...", reconnect_delay)
             time.sleep(reconnect_delay)
 
@@ -83,6 +94,9 @@ class MiioMqtt:
         # print.info("Reconnect failed after %s attempts. Exiting...", reconnect_count)
 
     def publish_status(self):
+        if self.closed:
+            return
+
         devStatus = self.device.status()
         for attr in devStatus.data:
             value = str(getattr(devStatus, attr))
@@ -91,6 +105,9 @@ class MiioMqtt:
             self._publish(topic, value)
 
     def publish_setting(self):
+        if self.closed:
+            return
+
         settings = self.device.settings()
 
         for setting in settings:
@@ -109,6 +126,9 @@ class MiioMqtt:
                 self._publish(topic, str(value))
 
     def _on_message(client, userdata, msg, data):
+        if client.closed:
+            return
+
         self = userdata.miiomqtt
         settings = self.device.settings()
         settingName = self.mapping_topic_setting[data.topic]
