@@ -1,5 +1,6 @@
 from paho.mqtt import client as mqtt_client
 import random
+import time
 
 class MiioMqtt:
     def __init__(self, device, host, port, topic):
@@ -28,12 +29,14 @@ class MiioMqtt:
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
                 print("Connected to MQTT Broker.")
+                client.miiomqtt._subscribe()
             else:
                 print("Failed to connect to MQTT Broker, return code %d\n", rc)
 
         # Set Connecting Client ID
         client = mqtt_client.Client(self.client_id)
         client.on_connect = on_connect
+        client.on_disconnect = self._on_disconnect
         client.connect(self.host, self.port)
         return client
 
@@ -50,6 +53,24 @@ class MiioMqtt:
             self.mapping_topic_setting[topic] = setting
 
         self.client.on_message = self._on_message
+
+    def _on_disconnect(self, userdata, rc, data):
+        reconnect_delay = 10
+        client = self.client
+
+        print("Disconnected with result code: %s", rc)
+        while True:
+            print("Reconnecting in %d seconds...", reconnect_delay)
+            time.sleep(reconnect_delay)
+
+            try:
+                client.reconnect()
+                print("Reconnected successfully!")
+                return
+            except Exception as err:
+                print("%s. Reconnect failed. Retrying...", err)
+
+        # print.info("Reconnect failed after %s attempts. Exiting...", reconnect_count)
 
     def publish_status(self):
         devStatus = self.device.status()

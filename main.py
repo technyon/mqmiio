@@ -55,11 +55,3 @@ if __name__ == '__main__':
 
 
 
-
-    # on = settings["air-purifier:on"]
-    # on.setter(False)
-
-
-    # print(dev.actions)
-
-
