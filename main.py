@@ -1,4 +1,4 @@
-from miio import DeviceFactory
+from miio import DeviceFactory, DeviceException
 from configparser import ConfigParser
 import time
 import miiomqtt
@@ -6,7 +6,11 @@ import signal
 
 def handler(signum, frame):
     print("Shutting down")
-    mqtt.close()
+    try:
+        mqtt.close()
+    except NameError:
+        print()
+
     exit(0)
 
 if __name__ == '__main__':
@@ -20,7 +24,15 @@ if __name__ == '__main__':
     host = config.get('miio', 'host')
     token = config.get('miio', 'token')
 
-    dev = DeviceFactory.create(host, token, None, force_generic_miot=True)
+    success = False
+
+    while not success:
+        try:
+            dev = DeviceFactory.create(host, token, None, force_generic_miot=True)
+            success = True
+        except DeviceException as err:
+            print(f"Failed to connect to MIoT device. Retry in 10 seconds. {err}")
+            time.sleep(10)
 
     # Initialize broker
     mqtt_host = config.get('mqtt', 'host')
@@ -29,27 +41,25 @@ if __name__ == '__main__':
 
     mqtt = miiomqtt.MiioMqtt(dev, mqtt_host, mqtt_port, mqtt_topic)
 
-
-
-    # devInfo = dev.get_property_by(2, 1)
-    # devProp = dev.get_properties(["air_purifier_on"])
-
     lastPubTime = 0
 
     while True:
         current_time = time.time()
 
         if current_time - lastPubTime > 3 or mqtt.publish_requested():
-            devStatus = dev.status()
+            try:
+                devStatus = dev.status()
 
-            for attr in devStatus.data:
-                print(attr + ": " + str(getattr(devStatus, attr)))
-            print("--")
+                for attr in devStatus.data:
+                    print(attr + ": " + str(getattr(devStatus, attr)))
+                print("--")
 
-            mqtt.publish_status()
-            mqtt.publish_setting()
+                mqtt.publish_status()
+                mqtt.publish_setting()
 
-            lastPubTime = time.time()
+                lastPubTime = time.time()
+            except DeviceException as err:
+                print(f"Error occured communicating with the MIoT device: {err}")
 
         time.sleep(0.5)
 
