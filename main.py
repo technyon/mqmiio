@@ -14,6 +14,8 @@ def handler(signum, frame):
     exit(0)
 
 if __name__ == '__main__':
+    error_count = 0
+
     signal.signal(signal.SIGINT, handler)
 
     # Read config
@@ -59,7 +61,12 @@ if __name__ == '__main__':
 
                 lastPubTime = time.time()
             except DeviceException as err:
+                error_count = error_count + 1
                 print(f"Error occured communicating with the MIoT device: {err}")
+
+        if error_count > 20:
+                print(f"Failed to reconnect to device, terminating.")
+                exit(0)
 
         time.sleep(0.5)
 
