@@ -33,6 +33,10 @@ if __name__ == '__main__':
             dev = DeviceFactory.create(host, token, None, force_generic_miot=True)
             success = True
         except DeviceException as err:
+            error_count = error_count + 1
+            if error_count > 20:
+                print(f"Failed to connect to device, terminating.")
+                exit(0)
             print(f"Failed to connect to MIoT device. Retry in 10 seconds. {err}")
             time.sleep(10)
 
