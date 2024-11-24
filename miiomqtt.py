@@ -3,13 +3,13 @@ import random
 import time
 
 class MiioMqtt:
-    def __init__(self, device, host, port, topic):
+    def __init__(self, device, host, port, clientid, topic):
         self.closed = False
         self.device = device
         self.host = host
         self.port = port
         self.topic = topic
-        self.client_id = f'miio-{random.randint(0, 10000)}'
+        self.client_id = clientid
         self.client = self._connect()
         self.client.miiomqtt = self
         self.publish_req = False

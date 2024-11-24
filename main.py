@@ -44,8 +44,9 @@ if __name__ == '__main__':
     mqtt_host = config.get('mqtt', 'host')
     mqtt_port = int(config.get('mqtt', 'port'))
     mqtt_topic = config.get('mqtt', 'topic')
+    mqtt_clientid = config.get('mqtt', 'clientid')
 
-    mqtt = miiomqtt.MiioMqtt(dev, mqtt_host, mqtt_port, mqtt_topic)
+    mqtt = miiomqtt.MiioMqtt(dev, mqtt_host, mqtt_port, mqtt_clientid, mqtt_topic)
 
     lastPubTime = 0
 
